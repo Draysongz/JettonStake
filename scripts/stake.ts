@@ -1,38 +1,37 @@
-import { toNano } from '@ton/core';
-import { StakingChild } from '../wrappers/StakingChild';
+
+import { Address, toNano } from '@ton/core';
+import { JettonStake } from '../wrappers/JettonStake';
 import { NetworkProvider } from '@ton/blueprint';
-import { firstChildAddress } from '../stakeConstants';
+import { parentContractAddress } from '../stakeConstants';
 import { sleep } from '../stakeConstants';
 
 export async function run(provider: NetworkProvider) {
-    const stakingChild = provider.open(await StakingChild.fromAddress(firstChildAddress));
+    const jettonStake = provider.open(await JettonStake.fromAddress(parentContractAddress));
 
-    const stakedBalanceBefore = await stakingChild.getStakedBalance()
-    console.log("staked balance before staking: ", stakedBalanceBefore);
+    const stakedBalanceBefore = (await jettonStake.getMetadata()).totalStaked
 
-    await stakingChild.send(
+    await jettonStake.send(
         provider.sender(),
         {
-            value: toNano("1.05")
+            value: toNano('1.06'),
         },
         {
             $$type: "Stake",
             amount: toNano("1")
-        }      
-    )
+        }
+    );
 
-    let stakedBalanceAfter = await stakingChild.getStakedBalance()
+    let stakedBalanceAfter = (await jettonStake.getMetadata()).totalStaked
     let attempt = 1
 
     while(stakedBalanceBefore === stakedBalanceAfter){
     console.log("Staking, attempt", attempt)
     await sleep(2000);
-    stakedBalanceAfter = await stakingChild.getStakedBalance()
+    stakedBalanceAfter = (await jettonStake.getMetadata()).totalStaked
     attempt++
 }
 
 
 
     console.log("balance after staking : ", stakedBalanceAfter);
-
 }

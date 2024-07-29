@@ -3,8 +3,8 @@ import { Address } from "@ton/core";
 
 
 
-const parentContractAddress = Address.parse("EQD7mX56FcvwIu_ATVMtsgdsoqwWblWUIkjPNt3MmwKLb270")
-const firstChildAddress = Address.parse("EQBc0k2BOGl6ax6tmrNoshv7SwKTHNMuGto4TduzLMFfXSJw")
+const parentContractAddress = Address.parse("EQDZHk1QzYCjdAj_201MZ9BVWlRxwowx799-77jqS4qiecuY")
+const firstChildAddress = Address.parse("EQA1G-axfYcoKV9t8vJ3v9bKdenU4xe4NTGhHajbpE6mMFxT")
 
 
 

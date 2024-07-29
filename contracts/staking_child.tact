@@ -16,8 +16,8 @@ message InternalAddTokens {
     origin: Address;
 }
 
-message UpdateTotalStaked {
-    amount: Int as coins;
+message UpdateStakeDetails{
+    amount: Int;
 }
 
 message TransferReward {
@@ -52,61 +52,16 @@ contract StakingChild with Deployable {
         self.jettonAddress = jettonAddress;
     }
 
-    receive(msg: Stake) {
-        require(sender() == self.owner, "Access denied");
-        self.stakedBalance = self.stakedBalance + msg.amount;
-        self.stakeTimestamp = now(); // Update to current time
-        send(SendParameters{
-            to: self.parent,
-            body: UpdateTotalStaked{amount: msg.amount}.toCell(),
-            value: ton("0.01"),
-            mode: SendIgnoreErrors
-        });
-    }
 
 
-    fun sendJettonTransfer(to: Address, amount: Int) {
-        // Send a message to the Jetton contract to perform the transfer
-        send(SendParameters{
-            to: self.jettonAddress,
-            body: TokenTransfer{
-                queryId: 0, // should be 0
-     amount: amount, // should be amount of jettons to send
-     destination: to, // should be user address / TokenNotification.from
-     responseDestination: myAddress(), // should be myAddress()
-     customPayload: null, // should be null
-     forwardTonAmount: ton("0.01"), // should be ton("0.01")
-     forwardPayload: emptySlice() // should be emptySlice()
-            }.toCell(),
-            value: ton("0.03"), // Fee to cover the transaction
-            mode: SendIgnoreErrors
-        });
-    }
-    receive(msg: Unstake) {
-        require(sender() == self.owner, "Access denied");
-        require(self.stakedBalance >= msg.amount, "Insufficient staked balance");
-        self.stakedBalance = self.stakedBalance - msg.amount;
 
-        // Notify parent contract about the updated staked balance
-        send(SendParameters{
-            to: self.parent,
-            body: UpdateTotalStaked{amount: -msg.amount}.toCell(),
-            value: ton("0.01"),
-            mode: SendIgnoreErrors
-        });
-
-         // Transfer the unstaked amount back to the user
-        send(SendParameters{
-            to: self.owner,
-            value: msg.amount,
-            mode: SendIgnoreErrors
-        });
-    }
+   
+ 
 
     receive(msg: ClaimReward) {
         require(sender() == self.owner, "Access denied");
         let rewardAmount: Int = self.calculateReward();
-        self.rewardBalance = self.rewardBalance + rewardAmount;
+        self.rewardBalance = rewardAmount;
         self.transferRewardToUser(rewardAmount);
     }
 
@@ -128,15 +83,19 @@ contract StakingChild with Deployable {
     }
 
     fun transferRewardToUser(amount: Int) {
-        // Transfer reward to the user (Jetton transfer)
-        self.sendJettonTransfer(self.owner, amount);
+       send(SendParameters{
+        to: self.parent,
+        value: ton("0.05"),
+        body: TransferReward{amount: amount, to: self.owner}.toCell(),
+        mode: SendIgnoreErrors
+       });
+
     }
 
 
-
-    receive(msg: InternalAddTokens) {
-        require(sender() == self.parent, "Parent only");
-        self.rewardBalance = self.rewardBalance + msg.amount;
+ receive(msg: UpdateStakeDetails) {
+        self.stakedBalance = self.stakedBalance + (msg.amount);
+        self.stakeTimestamp = now();
     }
 
     get fun stakedBalance(): Int {
@@ -144,6 +103,7 @@ contract StakingChild with Deployable {
     }
 
     get fun rewardBalance(): Int {
+        self.rewardBalance = self.calculateReward();
         return self.rewardBalance;
     }
 }

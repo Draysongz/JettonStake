@@ -13,7 +13,7 @@ export async function run(provider: NetworkProvider) {
             value: toNano('0.05'),
         },
         {
-            $$type: 'Deploy',
+            $$type: "Deploy",
             queryId: 0n,
         }
     );
